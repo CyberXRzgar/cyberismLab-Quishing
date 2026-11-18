@@ -1,0 +1,2 @@
+qrencode -o qr_location.png "https://[your-cloudflare-url]"
+xdg-open qr_location.png
