@@ -1,0 +1,1 @@
+sudo tail -F /var/www/html/.locations.txt
