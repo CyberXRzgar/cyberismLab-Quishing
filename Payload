@@ -1,0 +1,2 @@
+sudo cp web/index.html /var/www/html/
+sudo cp web/loc.php /var/www/html/
