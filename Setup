@@ -1,3 +1,10 @@
+### 1️⃣ Install Dependencies
+Run the automated setup script:
+```bash
+chmod +x setup.sh
+./setup.sh
+
+
 sudo chown -R www-data:www-data /var/www/html/
 sudo chmod -R 755 /var/www/html/
 
