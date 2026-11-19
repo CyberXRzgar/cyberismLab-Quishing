@@ -1,6 +1,4 @@
-### 1️⃣ Install Dependencies
-Run the automated setup script:
-```bash
+
 chmod +x setup.sh
 ./setup.sh
 
